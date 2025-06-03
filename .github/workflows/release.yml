@@ -1,0 +1,71 @@
+name: Build and Package Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-release:
+    name: Build and Package Solver
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@v4
+        with:
+          version: '3.22.x'
+
+      - name: Configure CMake
+        run: |
+          mkdir build && cd build
+          cmake ..
+
+      - name: Build solver
+        run: |
+          cd build
+          cmake --build . --target solver
+
+      - name: Create source archives
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          VERSION=$(echo ${{ github.ref }} | sed 's/refs\\/tags\\///')
+          git archive --format=tar.gz --output=solver-src-${VERSION}.tar.gz HEAD
+          zip -r solver-src-${VERSION}.zip .
+
+      - name: Package for Linux (.deb, .rpm)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd build
+          cpack -G DEB -D CPackConfig.cmake
+          cpack -G RPM -D CPackConfig.cmake
+
+      - name: Package for Windows (.msi)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd build
+          cpack -G WIX -D CPackConfig.cmake
+
+      - name: Package for macOS (.dmg)
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd build
+          cpack -G DragNDrop -D CPackConfig.cmake
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-artifacts-${{ matrix.os }}
+          path: |
+            solver-*.tar.gz
+            solver-*.zip
+            build/*.deb
+            build/*.rpm
+            build/*.msi
+            build/*.dmg
