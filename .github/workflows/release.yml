@@ -7,11 +7,11 @@ on:
 
 jobs:
   build-release:
-    name: Build and Package Solver
+    name: Build and Package Solver for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout code
@@ -21,6 +21,7 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v2.3.0
         with:
           cmake-version: '3.22.x'
+
       - name: Configure CMake
         run: |
           mkdir build && cd build
@@ -31,7 +32,7 @@ jobs:
           cd build
           cmake --build . --target solver
 
-      - name: Create source archives
+      - name: Create source archives (Linux only)
         if: matrix.os == 'ubuntu-latest'
         run: |
           VERSION=$(echo ${{ github.ref }} | sed 's/refs\\/tags\\///')
@@ -42,28 +43,27 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           cd build
-          cpack -G DEB -D CPackConfig.cmake
-          cpack -G RPM -D CPackConfig.cmake
+          cpack -G DEB RPM
 
       - name: Package for Windows (.msi)
         if: matrix.os == 'windows-latest'
         run: |
           cd build
-          cpack -G WIX -D CPackConfig.cmake
+          cpack -G WIX
 
       - name: Package for macOS (.dmg)
         if: matrix.os == 'macos-latest'
         run: |
           cd build
-          cpack -G DragNDrop -D CPackConfig.cmake
+          cpack -G DragNDrop
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: release-artifacts-${{ matrix.os }}
           path: |
-            solver-*.tar.gz
-            solver-*.zip
+            solver-src-*.tar.gz
+            solver-src-*.zip
             build/*.deb
             build/*.rpm
             build/*.msi
