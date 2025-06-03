@@ -3,7 +3,7 @@ name: Build and Package Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*' # Срабатывает при пуше тега, например v1.0.0
 
 jobs:
   build-release:
@@ -17,10 +17,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup CMake
-        uses: jwlawson/actions-setup-cmake@v2.3.0
-        with:
-          cmake-version: '3.22.x'
+      - name: Install CMake (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+
+      - name: Install CMake (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y --no-progress
+
+      - name: Install CMake (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install cmake
 
       - name: Configure CMake
         run: |
