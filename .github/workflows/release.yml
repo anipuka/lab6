@@ -25,9 +25,10 @@ jobs:
 
       - name: Install CMake (Windows)
         if: matrix.os == 'windows-latest'
+        timeout-minutes: 5
         run: |
           choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y --no-progress
-
+     
       - name: Install CMake (macOS)
         if: matrix.os == 'macos-latest'
         run: |
@@ -36,7 +37,7 @@ jobs:
       - name: Configure CMake
         run: |
           mkdir build && cd build
-          cmake ..
+          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ..
 
       - name: Build solver
         run: |
@@ -46,9 +47,9 @@ jobs:
       - name: Create source archives (Linux only)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          VERSION=$(echo ${{ github.ref }} | sed 's/refs\\/tags\\///')
-          git archive --format=tar.gz --output=solver-src-${VERSION}.tar.gz HEAD
-          zip -r solver-src-${VERSION}.zip .
+          VERSION=${GITHUB_REF#refs/tags/}
+          git archive --format=tar.gz --prefix=solver-${VERSION}/ -o solver-src-${VERSION}.tar.gz HEAD
+          git archive --format=zip --prefix=solver-${VERSION}/ -o solver-src-${VERSION}.zip HEAD
 
       - name: Package for Linux (.deb, .rpm)
         if: matrix.os == 'ubuntu-latest'
