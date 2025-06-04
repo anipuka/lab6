@@ -50,7 +50,7 @@ jobs:
       - name: Build solver
         run: |
           cd build
-          cmake --build . --target solver --clean-first
+          cmake --build . --target solver --config Release 
 
       - name: Create source archives (Linux only)
         if: matrix.os == 'ubuntu-latest'
@@ -69,7 +69,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           cd build
-          cpack -G WIX --config CPackConfig.cmake --config CPackSourceConfig.cmake --verbose --config Release
+          cpack -G WIX
 
       - name: Package for macOS (.dmg)
         if: matrix.os == 'macos-latest'
